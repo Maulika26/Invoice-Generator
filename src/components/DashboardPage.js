@@ -20,20 +20,41 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (authLoading) return; // Wait for auth to finish
-    fetchDashboardData();
+
+    // Safety timeout - never stay loading for more than 8 seconds
+    const timeout = setTimeout(() => {
+      console.warn('[Dashboard] Safety timeout reached, forcing loading=false');
+      setLoading(false);
+    }, 8000);
+
+    fetchDashboardData().finally(() => clearTimeout(timeout));
+
+    return () => clearTimeout(timeout);
   }, [authLoading]);
 
   const fetchDashboardData = async () => {
     try {
+      console.log('[Dashboard] Fetching data...');
+      
       // Fetch invoice stats
-      const { data: invoices } = await supabase
+      const { data: invoices, error: invoiceError } = await supabase
         .from('invoices')
         .select('id, invoice_number, invoice_date, total, status, clients(name)')
         .order('created_at', { ascending: false });
 
-      const { data: clients } = await supabase
+      if (invoiceError) {
+        console.error('[Dashboard] Invoice fetch error:', invoiceError);
+      }
+
+      const { data: clients, error: clientError } = await supabase
         .from('clients')
         .select('id');
+
+      if (clientError) {
+        console.error('[Dashboard] Client fetch error:', clientError);
+      }
+
+      console.log('[Dashboard] Fetched invoices:', invoices?.length, 'clients:', clients?.length);
 
       const allInvoices = invoices || [];
       const totalRevenue = allInvoices
@@ -52,7 +73,7 @@ export default function DashboardPage() {
 
       setRecentInvoices(allInvoices.slice(0, 5));
     } catch (err) {
-      console.error('Dashboard fetch error:', err);
+      console.error('[Dashboard] Fetch error:', err);
     } finally {
       setLoading(false);
     }

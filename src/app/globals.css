@@ -181,6 +181,7 @@ img {
   white-space: nowrap;
   height: 38px;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .btn-primary {
@@ -318,6 +319,8 @@ select.input {
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--space-4);
+  gap: var(--space-3);
+  flex-wrap: wrap;
 }
 
 .card-title {
